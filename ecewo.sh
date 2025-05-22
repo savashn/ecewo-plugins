@@ -213,11 +213,11 @@ if [ "$INSTALL" -eq 1 ]; then
     echo
     echo "Packages list:"
     echo "============================================="
-    echo "  cJSON     ./build.sh --install --cjson"
-    echo "  .env      ./build.sh --install --dotenv"
-    echo "  SQLite3   ./build.sh --install --sqlite"
-    echo "  Session   ./build.sh --install --session"
-    echo "  Async     ./build.sh --install --async"
+    echo "  cJSON     ./ecewo.sh --install --cjson"
+    echo "  .env      ./ecewo.sh --install --dotenv"
+    echo "  SQLite3   ./ecewo.sh --install --sqlite"
+    echo "  Session   ./ecewo.sh --install --session"
+    echo "  Async     ./ecewo.sh --install --async"
     echo "============================================="
     echo
     exit 0

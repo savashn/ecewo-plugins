@@ -233,11 +233,11 @@ if "%INSTALL%"=="1" (
         echo.
         echo Available packages:
         echo ===============================================
-        echo    cJSON:      build.bat /install --cjson
-        echo    .env:       build.bat /install --dotenv
-        echo    SQLite3:    build.bat /install --sqlite
-        echo    Session:    build.bat /install --session
-        echo    Async:      build.bat /install --async
+        echo    cJSON:      ecewo.bat /install --cjson
+        echo    .env:       ecewo.bat /install --dotenv
+        echo    SQLite3:    ecewo.bat /install --sqlite
+        echo    Session:    ecewo.bat /install --session
+        echo    Async:      ecewo.bat /install --async
         echo ===============================================
         endlocal
         exit /b 0

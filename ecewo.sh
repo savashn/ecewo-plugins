@@ -13,7 +13,6 @@ BASE_DIR="$(cd "$(dirname "$0")" && pwd)/"
 RUN=0
 REBUILD=0
 UPDATE=0
-CREATE=0
 MIGRATE=0
 INSTALL=0
 
@@ -29,9 +28,6 @@ for arg in "$@"; do
     --update)
       UPDATE=1
       ;;
-    --create)
-      CREATE=1
-      ;;
     --migrate)
       MIGRATE=1
       ;;
@@ -45,76 +41,15 @@ for arg in "$@"; do
 done
 
 # Check if no parameters were provided
-if [[ $RUN -eq 0 && $REBUILD -eq 0 && $UPDATE -eq 0 && $CREATE -eq 0 && $MIGRATE -eq 0 && $INSTALL -eq 0 ]]; then
+if [[ $RUN -eq 0 && $REBUILD -eq 0 && $UPDATE -eq 0 && && $MIGRATE -eq 0 && $INSTALL -eq 0 ]]; then
   echo "No parameters specified. Please use one of the following:"
   echo ==========================================================
   echo "  --run       # Build and run the project"
   echo "  --rebuild   # Build from scratch"
   echo "  --update    # Update Ecewo"
-  echo "  --create    # Create a starter project"
   echo "  --migrate   # Migrate the "CMakeLists.txt" file"
   echo "  --install   # Install packages"
   echo ==========================================================
-  exit 0
-fi
-
-if [[ $CREATE -eq 1 ]]; then
-  if [ "$1" = "--dev" ]; then
-    BASE_DIR="dev"
-  else
-    BASE_DIR="src"
-  fi
-
-  echo "Create a project:"
-  read -p "Enter project name >>> " PROJECT_NAME
-  mkdir -p "$BASE_DIR"
-
-  cat <<EOF > src/handlers.h
-  #ifndef HANDLERS_H
-  #define HANDLERS_H
-
-  #include "ecewo.h"
-
-  void hello_world(Req *req, Res *res);
-
-  #endif
-EOF
-
-  cat <<EOF > src/handlers.c
-  #include "handlers.h"
-
-  void hello_world(Req *req, Res *res)
-  {
-    reply(res, 200, "text/plain", "hello world!");
-  }
-EOF
-
-  cat <<EOF > src/main.c
-  #include "server.h"
-  #include "handlers.h"
-
-  int main()
-  {
-    init_router();
-    get("/", hello_world);
-    ecewo(4000);
-    final_router();
-    return 0;
-  }
-EOF
-
-  cat <<EOF > src/CMakeLists.txt
-  cmake_minimum_required(VERSION 3.10)
-  project(${PROJECT_NAME} VERSION 0.1.0 LANGUAGES C)
-
-  set(APP_SRC
-    \${CMAKE_CURRENT_SOURCE_DIR}/main.c
-    \${CMAKE_CURRENT_SOURCE_DIR}/handlers.c
-    PARENT_SCOPE
-  )
-EOF
-
-  echo "Starter project created successfully."
   exit 0
 fi
 

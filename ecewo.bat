@@ -14,7 +14,6 @@ REM Initialize flags and branch
 set "RUN=0"
 set "REBUILD=0"
 set "UPDATE=0"
-set "CREATE=0"
 set "MIGRATE=0"
 set "INSTALL=0"
 
@@ -24,7 +23,6 @@ if "%~1"=="" goto after_parse
 if /i "%~1"=="/run" set "RUN=1"
 if /i "%~1"=="/rebuild" set "REBUILD=1"
 if /i "%~1"=="/update" set "UPDATE=1"
-if /i "%~1"=="/create" set "CREATE=1"
 if /i "%~1"=="/migrate" set "MIGRATE=1"
 if /i "%~1"=="/install" set "INSTALL=1"
 shift
@@ -32,21 +30,19 @@ goto parse_args
 :after_parse
 
 REM Check if no parameters were provided
-if "%RUN%%REBUILD%%UPDATE%%CREATE%%MIGRATE%%INSTALL%"=="000000" (
+if "%RUN%%REBUILD%%UPDATE%%MIGRATE%%INSTALL%"=="000000" (
     echo No parameters specified. Please use one of the following:
     echo ==============================================================================
     echo   /run         # Build and run the project
     echo   /rebuild     # Build from scratch
     echo   /update      # Update Ecewo
-    echo   /create      # Create a starter project
     echo   /migrate     # Migrate the "CMakeLists.txt" file
     echo   /install     # Install packages
     echo ==============================================================================
     exit /b 0
 )
 
-REM --- Priority: create -> run -> update -> rebuild -> migrate -> install
-if "%CREATE%"=="1" goto do_create
+REM --- Priority: run -> update -> rebuild -> migrate -> install
 if "%RUN%"=="1"   goto do_run
 if "%UPDATE%"=="1"  goto do_update
 if "%REBUILD%"=="1" goto do_rebuild
@@ -133,74 +129,6 @@ if "%REBUILD%"=="1" (
 
     REM Return to original directory
     cd ..\..
-    exit /b 0
-)
-
-:do_create
-REM Create a project
-if "%CREATE%"=="1" (
-    setlocal EnableDelayedExpansion
-    echo Create a project:
-    set /p PROJECT_NAME=Enter project name ^>^>^> 
-
-    for %%A in (%*) do (
-        if "%%~A"=="--dev" (
-            if not exist dev mkdir dev
-        )
-        else (
-            if not exist src mkdir src
-        )
-    )
-
-    @REM if not exist src mkdir src
-
-    > src\handlers.h (
-        echo #ifndef HANDLERS_H
-        echo #define HANDLERS_H
-        echo.
-        echo #include "ecewo.h"
-        echo.
-        echo void hello_world^(Req *req, Res *res^);
-        echo.
-        echo #endif
-    )
-
-    > src\handlers.c (
-        echo #include "handlers.h"
-        echo.
-        echo void hello_world^(Req *req, Res *res^)
-        echo {
-        echo     reply^(res, 200, "text/plain", "hello world!"^);
-        echo }
-    )
-
-    > src\main.c (
-        echo #include "server.h"
-        echo #include "handlers.h"
-        echo.
-        echo int main^(^)
-        echo {
-        echo     init_router^(^);
-        echo     get^("/", hello_world^);
-        echo     ecewo^(4000^);
-        echo     final_router^(^);
-        echo     return 0;
-        echo }
-    )
-
-    > src\CMakeLists.txt (
-        echo cmake_minimum_required^(VERSION 3.10^)
-        echo project^(!PROJECT_NAME! VERSION 0.1.0 LANGUAGES C^)
-        echo.
-        echo set^(APP_SRC
-        echo     ^${CMAKE_CURRENT_SOURCE_DIR}/main.c
-        echo     ^${CMAKE_CURRENT_SOURCE_DIR}/handlers.c
-        echo     PARENT_SCOPE
-        echo ^)
-    )
-
-    echo Starter project "!PROJECT_NAME!" created successfully.
-    endlocal
     exit /b 0
 )
 

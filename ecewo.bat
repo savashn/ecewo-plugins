@@ -52,7 +52,6 @@ if "%INSTALL%"=="1" goto do_install
 goto end
 
 :do_run
-REM Build
 if "%RUN%"=="1" (
     REM Create build directory if it doesn't exist
     if not exist build mkdir build
@@ -81,7 +80,6 @@ if "%RUN%"=="1" (
 )
 
 :do_update
-REM If update requested, perform only update then exit
 if "%UPDATE%"=="1" (
   echo Updating from %REPO% (branch: main)
   if exist temp_repo rmdir /s /q temp_repo
@@ -101,7 +99,6 @@ if "%UPDATE%"=="1" (
 )
 
 :do_rebuild
-REM Handle rebuild flag
 if "%REBUILD%"=="1" (
     echo Cleaning build directory...
     if exist build rmdir /s /q build
@@ -140,15 +137,6 @@ if "%MIGRATE%"=="1" (
     echo Migrating all .c files in src\ and its subdirectories to src\CMakeLists.txt
 
     set "SRC_DIR=!BASE_DIR!src"
-    set "PROD=true"
-
-    for %%A in (%*) do (
-        if "%%~A"=="--dev" (
-            set "SRC_DIR=!BASE_DIR!dev"
-            set "PROD=false"
-        )
-    )
-
     set "CMAKE_FILE=!SRC_DIR!\CMakeLists.txt"
 
     if not exist "!SRC_DIR!" (
@@ -165,11 +153,7 @@ if "%MIGRATE%"=="1" (
 
     for /R %%F in (*.c) do (
         set "full=%%~fF"
-        if "!PROD!"=="true" (
-            set "rel=!full:%BASE_DIR%src\=!"
-        ) else (
-            set "rel=!full:%BASE_DIR%dev\=!"
-        )
+        set "rel=!full:%BASE_DIR%src\=!"
         set "rel=!rel:\=/!"
         >> "!TMP_FILE!" echo     ${CMAKE_CURRENT_SOURCE_DIR}/!rel!
     )

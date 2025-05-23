@@ -41,7 +41,7 @@ for arg in "$@"; do
 done
 
 # Check if no parameters were provided
-if [[ $RUN -eq 0 && $REBUILD -eq 0 && $UPDATE -eq 0 && && $MIGRATE -eq 0 && $INSTALL -eq 0 ]]; then
+if [[ $RUN -eq 0 && $REBUILD -eq 0 && $UPDATE -eq 0 && $MIGRATE -eq 0 && $INSTALL -eq 0 ]]; then
   echo "No parameters specified. Please use one of the following:"
   echo ==========================================================
   echo "  --run       # Build and run the project"
@@ -149,12 +149,7 @@ if [[ $REBUILD -eq 1 ]]; then
 fi
 
 if [ "$MIGRATE" -eq 1 ]; then
-  if [ "$1" = "--dev" ]; then
-    BASE_SUBDIR="dev"
-  else
-    BASE_SUBDIR="src"
-  fi
-
+  BASE_SUBDIR="src"
   SRC_DIR="${BASE_DIR}${BASE_SUBDIR}"
   CMAKE_FILE="$SRC_DIR/CMakeLists.txt"
 

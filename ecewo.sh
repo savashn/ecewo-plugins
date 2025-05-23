@@ -189,14 +189,47 @@ if [ "$MIGRATE" -eq 1 ]; then
   exit 0
 fi
 
-if [ "$INSTALL" -eq 1 ]; then
+handle_cbor() {
+  BASE_DIR="ecewo"
+  CMAKE_FILE="$BASE_DIR/CMakeLists.txt"
 
-  TARGET_DIR="ecewo/vendors"
+  if grep -qi "FetchContent_Declare" "$CMAKE_FILE" && grep -qE 'FetchContent_Declare\(\s*tinycbor' "$CMAKE_FILE"; then
+    echo "TinyCBOR is already added"
+    return
+  fi
+
+  echo "Adding TinyCBOR..."
+
+  TINYCBOR_BLOCK=$(cat <<'EOF'
+FetchContent_Declare(
+  tinycbor
+  GIT_REPOSITORY https://github.com/intel/tinycbor.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(tinycbor)
+EOF
+)
+
+  awk -v block="$TINYCBOR_BLOCK" '
+    /# Empty place for TinyCBOR/ {
+      print block;
+      next;
+    }
+    { print }
+  ' "$CMAKE_FILE" > "$CMAKE_FILE.tmp" && mv "$CMAKE_FILE.tmp" "$CMAKE_FILE"
+
+  sed -i 's/target_link_libraries(ecewo uv llhttp_static)/target_link_libraries(ecewo uv llhttp_static tinycbor)/' "$CMAKE_FILE"
+
+  echo "TinyCBOR added successfully"
+}
+
+if [ "$INSTALL" -eq 1 ]; then
+  TARGET_DIR="ecewo/plugins"
   HAS_PACKAGE_ARG=0
 
   for arg in "$@"; do
     case "$arg" in
-      --cjson|--dotenv|--sqlite|--session|--async)
+      --cjson|--dotenv|--sqlite|--session|--async|--cbor)
         HAS_PACKAGE_ARG=1
         ;;
     esac
@@ -213,6 +246,7 @@ if [ "$INSTALL" -eq 1 ]; then
     echo "  SQLite3   ./ecewo.sh --install --sqlite"
     echo "  Session   ./ecewo.sh --install --session"
     echo "  Async     ./ecewo.sh --install --async"
+    echo "  TinyCBOR  ./ecewo.sh --install --cbor"
     echo "============================================="
     echo
     exit 0
@@ -224,6 +258,9 @@ if [ "$INSTALL" -eq 1 ]; then
 
   for arg in "$@"; do
     case "$arg" in
+      --cbor)
+        handle_cbor
+        ;;
       --cjson)
         echo "Installing cJSON"
         mkdir -p "$TARGET_DIR"

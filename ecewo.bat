@@ -194,13 +194,63 @@ if "%MIGRATE%"=="1" (
     exit /b 0
 )
 
+:ADD_CBOR
+set "CMAKE_FILE=%BASE_DIR%ecewo\CMakeLists.txt"
+
+:: Exit if TinyCBOR is already added
+findstr /I /C:"FetchContent_Declare" "%CMAKE_FILE%" | findstr /I /C:"tinycbor" >nul
+if %errorlevel%==0 (
+    echo TinyCBOR is already added
+    goto :EOF
+)
+
+echo Adding TinyCBOR...
+
+:: Write TinyCBOR block to a temporary file
+> "%TEMP%\tinycbor_block.txt" (
+echo FetchContent_Declare^(
+echo   tinycbor
+echo   GIT_REPOSITORY https://github.com/intel/tinycbor.git
+echo   GIT_TAG main
+echo ^)
+echo.
+echo FetchContent_MakeAvailable^(tinycbor^)
+)
+
+:: Find the line with '# Empty place for TinyCBOR' and replace it with the TinyCBOR block
+> "%CMAKE_FILE%.tmp" (
+    for /F "usebackq delims=" %%L in (`
+        findstr /R /N "^^" "!CMAKE_FILE!"
+    `) do (
+        rem %%L: "NN:actual line"
+        set "NUM_LINE=%%L"
+        set "LINE=!NUM_LINE:*:=!"
+        
+        echo(!LINE! | findstr /C:"# Empty place for TinyCBOR" >nul
+        if !errorlevel! equ 0 (
+            type "%TEMP%\tinycbor_block.txt"
+        ) else (
+            echo(!LINE!
+        )
+    )
+)
+move /Y "%CMAKE_FILE%.tmp" "%CMAKE_FILE%" >nul
+
+:: Update the target_link_libraries line
+powershell -Command "(Get-Content '%CMAKE_FILE%') -replace 'target_link_libraries\(ecewo uv llhttp_static\)', 'target_link_libraries(ecewo uv llhttp_static tinycbor)' | Set-Content '%CMAKE_FILE%'"
+
+:: Clean up the temporary file
+del "%TEMP%\tinycbor_block.txt" >nul 2>&1
+
+echo TinyCBOR successfully added.
+goto :EOF
+
 :do_install
-REM Installation
 if "%INSTALL%"=="1" (
     @echo Off
     setlocal EnableDelayedExpansion
 
-    set "TARGET_DIR=%BASE_DIR%ecewo\vendors"
+    set "TARGET_DIR=%BASE_DIR%ecewo\plugins"
     set "HAS_PACKAGE_ARG=0"
 
     for %%A in (%*) do (
@@ -209,6 +259,7 @@ if "%INSTALL%"=="1" (
         if "%%~A"=="--sqlite" set HAS_PACKAGE_ARG=1
         if "%%~A"=="--session" set HAS_PACKAGE_ARG=1
         if "%%~A"=="--async" set HAS_PACKAGE_ARG=1
+        if "%%~A"=="--cbor" set HAS_PACKAGE_ARG=1
     )
 
     if "!HAS_PACKAGE_ARG!"=="0" (
@@ -222,6 +273,7 @@ if "%INSTALL%"=="1" (
         echo    SQLite3:    ecewo.bat /install --sqlite
         echo    Session:    ecewo.bat /install --session
         echo    Async:      ecewo.bat /install --async
+        echo    TinyCBOR:   ecewo.bat /install --cbor
         echo ===============================================
         endlocal
         exit /b 0
@@ -232,6 +284,9 @@ if "%INSTALL%"=="1" (
     )
 
     for %%A in (%*) do (
+        if "%%~A"=="--cbor" (
+            call :ADD_CBOR
+        )
         if "%%~A"=="--cjson" (
             echo Installing cJSON...
             curl -s -o "!TARGET_DIR!\cJSON.c" https://raw.githubusercontent.com/DaveGamble/cJSON/master/cJSON.c

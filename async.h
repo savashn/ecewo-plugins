@@ -24,9 +24,6 @@ struct async_t
     // Task callbacks
     async_work_fn_t work_fn;          // Work to be done in thread pool
     async_response_handler_t handler; // Response handler
-
-    // Optional cleanup function for context
-    void (*cleanup_fn)(void *context); // Function to free context resources
 };
 
 static void _async_work_cb(uv_work_t *req);
@@ -36,23 +33,20 @@ void fail(async_t *task, const char *error_msg);
 int async_execute(
     void *context,
     async_work_fn_t work_fn,
-    async_response_handler_t handler,
-    void (*cleanup_fn)(void *context));
+    async_response_handler_t handler);
 
 void await_execute(
     void *context,
     int success,
     char *error,
     async_work_fn_t next_work_fn,
-    async_response_handler_t handler,
-    void (*cleanup_fn)(void *context));
+    async_response_handler_t handler);
 
 #define async(ctx, tag) \
     async_execute(      \
         ctx,            \
         tag##_work,     \
-        tag##_done,     \
-        free_async)
+        tag##_done)
 
 #define await(ctx, tag) \
     await_execute(      \
@@ -60,7 +54,6 @@ void await_execute(
         success,        \
         error,          \
         tag##_work,     \
-        tag##_done,     \
-        free_async)
+        tag##_done)
 
 #endif

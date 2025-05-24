@@ -33,11 +33,6 @@ static void _async_after_work_cb(uv_work_t *req, int status)
     {
         task->handler(task->context, task->result, task->error);
     }
-    else if (!task->result && task->cleanup_fn)
-    {
-        // If no handler but task failed, clean up the context
-        task->cleanup_fn(task->context);
-    }
 
     // Free error message if any
     if (task->error)
@@ -78,10 +73,9 @@ void fail(async_t *task, const char *error_msg)
 
 // Creates and executes an async task
 int async_execute(
-    void *context,                     // User context to pass to callbacks
-    async_work_fn_t work_fn,           // Function to execute in the thread pool
-    async_response_handler_t handler,  // Response handler called after task completion
-    void (*cleanup_fn)(void *context)) // Optional function to clean up context on failure (can be NULL)
+    void *context,                    // User context to pass to callbacks
+    async_work_fn_t work_fn,          // Function to execute in the thread pool
+    async_response_handler_t handler) // Response handler called after task completion
 {
     if (!work_fn)
         return -1;
@@ -91,9 +85,6 @@ int async_execute(
     if (!task)
     {
         fprintf(stderr, "Failed to allocate memory for async task\n");
-        // Clean up context if cleanup function is provided
-        if (cleanup_fn)
-            cleanup_fn(context);
         return -1;
     }
 
@@ -105,7 +96,6 @@ int async_execute(
     task->error = NULL;
     task->work_fn = work_fn;
     task->handler = handler;
-    task->cleanup_fn = cleanup_fn;
 
     // Queue work
     int result = uv_queue_work(
@@ -117,9 +107,6 @@ int async_execute(
     if (result != 0)
     {
         fprintf(stderr, "Failed to queue async work: %s\n", uv_strerror(result));
-        // Clean up context if cleanup function is provided
-        if (cleanup_fn)
-            cleanup_fn(context);
         free(task);
     }
 
@@ -128,17 +115,16 @@ int async_execute(
 
 // Chains another async task after a successful response
 void await_execute(
-    void *context,                     // User context
-    int success,                       // Whether previous task was successful
-    char *error,                       // Error message if previous task failed
-    async_work_fn_t next_work_fn,      // Next work function to execute if successful
-    async_response_handler_t handler,  // Response handler for the next task
-    void (*cleanup_fn)(void *context)) // Optional cleanup function
+    void *context,                    // User context
+    int success,                      // Whether previous task was successful
+    char *error,                      // Error message if previous task failed
+    async_work_fn_t next_work_fn,     // Next work function to execute if successful
+    async_response_handler_t handler) // Response handler for the next task
 {
     if (success)
     {
         // Previous task was successful, chain the next task
-        async_execute(context, next_work_fn, handler, cleanup_fn);
+        async_execute(context, next_work_fn, handler);
     }
     else
     {
@@ -146,12 +132,6 @@ void await_execute(
         if (handler)
         {
             handler(context, 0, error);
-        }
-        else if (cleanup_fn)
-        {
-            // If there's no handler to properly handle the error,
-            // we need to clean up here to avoid memory leaks
-            cleanup_fn(context);
         }
     }
 }
